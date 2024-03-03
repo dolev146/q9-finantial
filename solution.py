@@ -3,7 +3,7 @@ from typing import List, Set, Optional, Tuple
 def calculate_total_budget_and_share(budget: List[float], n: int) -> Tuple[float, float]:
     total_budget = sum(budget)
     share_per_citizen = total_budget / n if n else 0
-    return total_budget, share_per_citizen
+    return share_per_citizen
 
 def find_interested_citizens(preferences: List[Set[int]], subject_index: int, n: int) -> List[int]:
     return [i for i in range(n) if subject_index in preferences[i]]
@@ -47,6 +47,11 @@ def allocate_budget_for_subject(budget: List[float], preferences: List[Set[int]]
     return True
 
 def verify_allocation(decomposition: List[List[float]], share_per_citizen: float) -> bool:
+    """
+    checks whether the allocation of budget to citizens for subjects
+    is close value to his budget because of problems with 
+    decimal points in fractions
+    """
     return all(abs(sum(allocation) - share_per_citizen) < 1e-9 for allocation in decomposition)
 
 def is_basic_case_func(budget: List[float], preferences: List[Set[int]]):
@@ -103,18 +108,26 @@ def find_decomposition(budget: List[float], preferences: List[Set[int]]) -> Opti
     if basic_case:
       return calc_decomposition_for_basic_case(budget, preferences)
     else:
-      n = len(preferences)
-      total_budget, share_per_citizen = calculate_total_budget_and_share(budget, n)
-      decomposition = [[0 for _ in range(len(budget))] for _ in range(n)]
+        n = len(preferences)
+        share_per_citizen = calculate_total_budget_and_share(budget, n)
+        decomposition = [[0 for _ in range(len(budget))] for _ in range(n)]
 
-      for j in range(len(budget)):
-          if not allocate_budget_for_subject(budget, preferences, j, share_per_citizen, decomposition):
-              return None  # Adjusted to handle insufficient budget correctly.
+        # Iterates over each subject in the budget list.
+        for j in range(len(budget)):
+            # Attempts to allocate the budget for subject j among citizens based on their preferences.
+            # The allocation respects each citizen's maximum allowed share.
+            # If the allocation for this subject cannot be completed successfully (e.g., due to insufficient budget or
+            # because it's impossible to satisfy all preferences without exceeding share limits),
+            # the function returns None, indicating the overall allocation process has failed.
+            if not allocate_budget_for_subject(budget, preferences, j, share_per_citizen, decomposition):
+                return None
 
-      if not verify_allocation(decomposition, share_per_citizen):
-          return None  # Ensure verification step is correctly applied.
 
-      return decomposition
+        if not verify_allocation(decomposition, share_per_citizen):
+
+            return None  # Ensure verification step is correctly applied.
+        
+    return decomposition
 
 # Running the code
 budget = [400, 50, 50, 0]
