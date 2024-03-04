@@ -1,7 +1,6 @@
-import unittest
-
-
 from typing import List, Set, Optional, Tuple
+import itertools
+import unittest
 
 def calculate_total_budget_and_share(budget: List[float], n: int) -> Tuple[float, float]:
     total_budget = sum(budget)
@@ -87,11 +86,10 @@ def calc_decomposition_for_basic_case(budget: List[float], preferences: List[Set
 def check_if_no_pref_then_return_None(preferences: List[Set[int]]) -> bool:
     """
     Checks if any of the citizens have no preferences.
-    
+
     Returns True if at least one citizen has no preferences, otherwise False.
     """
     return any(len(pref) == 0 for pref in preferences)
-
 
 
 def find_decomposition(budget: List[float], preferences: List[Set[int]]) -> Optional[List[List[float]]]:
@@ -106,21 +104,20 @@ def find_decomposition(budget: List[float], preferences: List[Set[int]]) -> Opti
     if basic_case:
       return calc_decomposition_for_basic_case(budget, preferences)
     else:
-      n = len(preferences)
-      total_budget, share_per_citizen = calculate_total_budget_and_share(budget, n)
-      decomposition = [[0 for _ in range(len(budget))] for _ in range(n)]
+      subject_indices = range(len(budget))
+      for permutation in itertools.permutations(subject_indices):
+          decomposition = [[0 for _ in range(len(budget))] for _ in range(len(preferences))]
+          success = True
+          for subject_index in permutation:
+              share_per_citizen = calculate_total_budget_and_share(budget, len(preferences))[1]
+              if not allocate_budget_for_subject(budget, preferences, subject_index, share_per_citizen, decomposition):
+                  success = False
+                  break
+          if success and verify_allocation(decomposition, share_per_citizen):
+              return decomposition
+      return None
 
-      for j in range(len(budget)):
-          if not allocate_budget_for_subject(budget, preferences, j, share_per_citizen, decomposition):
-              return None  # Adjusted to handle insufficient budget correctly.
-
-      if not verify_allocation(decomposition, share_per_citizen):
-          return None  # Ensure verification step is correctly applied.
-
-      return decomposition
-
-
-
+import unittest
 
 class TestBudgetDecomposition(unittest.TestCase):
 
@@ -183,8 +180,18 @@ class TestBudgetDecomposition(unittest.TestCase):
         self.assertIsNone(result)
 
 
+    def test_reverse(self):
+        budget = [100, 100]
+        preferences = [{0, 1}, {0}]
+        expected = [[0.0, 100.0], [100.0, 0]]
+        result = find_decomposition(budget, preferences)
+        self.assertEqual(result, expected)
+
+
+
 if __name__ == '__main__':
     # Loading the test cases from the class
     tests = unittest.TestLoader().loadTestsFromTestCase(TestBudgetDecomposition)
     # Running the test cases
     unittest.TextTestRunner().run(tests)
+
