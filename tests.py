@@ -97,25 +97,18 @@ def find_decomposition(budget: List[float], preferences: List[Set[int]]) -> Opti
     if check_if_no_pref_then_return_None(preferences):
         return None
 
-    basic_case = False
-
-    # add a function to handle the case where each citizen prefer different, the basic case test_basic_scenario
-    basic_case = is_basic_case_func(budget, preferences)
-    if basic_case:
-      return calc_decomposition_for_basic_case(budget, preferences)
-    else:
-      subject_indices = range(len(budget))
-      for permutation in itertools.permutations(subject_indices):
-          decomposition = [[0 for _ in range(len(budget))] for _ in range(len(preferences))]
-          success = True
-          for subject_index in permutation:
-              share_per_citizen = calculate_total_budget_and_share(budget, len(preferences))[1]
-              if not allocate_budget_for_subject(budget, preferences, subject_index, share_per_citizen, decomposition):
-                  success = False
-                  break
-          if success and verify_allocation(decomposition, share_per_citizen):
-              return decomposition
-      return None
+    subject_indices = range(len(budget))
+    for permutation in itertools.permutations(subject_indices):
+        decomposition = [[0 for _ in range(len(budget))] for _ in range(len(preferences))]
+        success = True
+        for subject_index in permutation:
+            share_per_citizen = calculate_total_budget_and_share(budget, len(preferences))[1]
+            if not allocate_budget_for_subject(budget, preferences, subject_index, share_per_citizen, decomposition):
+                success = False
+                break
+        if success and verify_allocation(decomposition, share_per_citizen):
+            return decomposition
+    return None
 
 import unittest
 
@@ -145,9 +138,9 @@ class TestBudgetDecomposition(unittest.TestCase):
     def test_basic_scenario(self):
         budget = [100, 200]
         preferences = [{0}, {1}]
-        expected = [[100, 0], [0, 200]]
         result = find_decomposition(budget, preferences)
-        self.assertEqual(result, expected)
+        self.assertIsNone(result)
+
 
     def test_exact_budget_allocation(self):
         budget = [150, 150]
@@ -159,11 +152,8 @@ class TestBudgetDecomposition(unittest.TestCase):
     def test_excess_budget(self):
         budget = [300, 600]
         preferences = [{0}, {1}]
-        expected = [[300.0, 0], [0, 600.0]]
         result = find_decomposition(budget, preferences)
-        self.assertEqual(result, expected)
-
-
+        self.assertIsNone(result)
 
     def test_all_decompositions_are_true_budget(self):
         budget = [50, 100]
